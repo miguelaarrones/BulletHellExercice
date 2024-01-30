@@ -21,6 +21,14 @@ public class PlayerController : MonoBehaviour
     private Vector3 moveDirection = Vector3.zero;
     private float rotationX = 0f;
 
+    private float lastTimeRunning = 0f;
+    private float runTimeLimit = 5f;
+    private float runCooldownMax = 3f;
+    private float runCooldown;
+    private bool canRun = true;
+    private bool canDoubleJump = false;
+    private bool canJump = true;
+
     private CharacterController characterController;
 
 
@@ -45,14 +53,29 @@ public class PlayerController : MonoBehaviour
         float curSpeedY = 0f;
         if (canMove)
         {
-            if (isRunning)
+            if (isRunning && canRun)
             {
                 curSpeedX = runSpeed * Input.GetAxis("Vertical");
                 curSpeedY = runSpeed * Input.GetAxis("Horizontal");
-            } else
+                
+                lastTimeRunning += Time.deltaTime;
+                if (lastTimeRunning >= runTimeLimit)
+                {
+                    canRun = false;
+                }
+            } 
+            else
             {
                 curSpeedX = walkSpeed * Input.GetAxis("Vertical");
                 curSpeedY = walkSpeed * Input.GetAxis("Horizontal");
+
+                runCooldown += Time.deltaTime;
+                if (runCooldown >= runCooldownMax)
+                {
+                    lastTimeRunning = 0f;
+                    canRun = true;
+                    runCooldown = 0f;
+                }
             }
         }
 
@@ -60,9 +83,19 @@ public class PlayerController : MonoBehaviour
         moveDirection = (forward * curSpeedX) + (right * curSpeedY);
 
         // Handle jumping:
-        if (Input.GetButton("Jump") && canMove && characterController.isGrounded)
+
+        if (Input.GetButtonDown("Jump") && canMove)
         {
-            moveDirection.y = jumpPower;
+            if (canJump && characterController.isGrounded)
+            {
+                moveDirection.y = jumpPower;
+                canDoubleJump = true;
+            } 
+            else if (canDoubleJump)
+            {
+                canDoubleJump = false;
+                moveDirection.y = jumpPower;
+            }
         }
         else
         {
