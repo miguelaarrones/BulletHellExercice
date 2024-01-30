@@ -8,13 +8,6 @@ using UnityEngine.PlayerLoop;
 public class HealthSystem : MonoBehaviour
 {
     [SerializeField] private float health = 100f;
-
-    void Update()
-    {
-        TakeDamage(1f);
-        Debug.Log("Health: " + health);
-    }
-
     private void TakeDamage(float damage)
     {
         health -= damage;

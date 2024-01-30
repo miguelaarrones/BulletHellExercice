@@ -1,7 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
@@ -12,22 +8,24 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float runSpeed = 12f;
     [SerializeField] float jumpPower = 7f;
     [SerializeField] float gravity = 10f;
-    
+
+    [SerializeField] private float runTimeLimit = 5f;
+    [SerializeField] private float runCooldownMax = 3f;
+
     [SerializeField] float lookSpeed = 2f;
     [SerializeField] float lookXLimit = 45f;
 
-    [SerializeField] bool canMove = true;
-
-    private Vector3 moveDirection = Vector3.zero;
-    private float rotationX = 0f;
-
-    private float lastTimeRunning = 0f;
-    private float runTimeLimit = 5f;
-    private float runCooldownMax = 3f;
-    private float runCooldown;
+    private bool canMove = true;
     private bool canRun = true;
     private bool canDoubleJump = false;
     private bool canJump = true;
+
+    private Vector3 moveDirection = Vector3.zero;
+    private float rotationX = 0f;
+    private float moveDirectionY;
+
+    private float lastTimeRunning = 0f;
+    private float runCooldown;
 
     private CharacterController characterController;
 
@@ -43,6 +41,15 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        HandleMovement();
+        HandleRotation();
+        HandleJumping();
+
+        characterController.Move(moveDirection * Time.deltaTime);
+    }
+
+    private void HandleMovement()
+    {
         // Handle movement:
         Vector3 forward = transform.TransformDirection(Vector3.forward);
         Vector3 right = transform.TransformDirection(Vector3.right);
@@ -57,13 +64,13 @@ public class PlayerController : MonoBehaviour
             {
                 curSpeedX = runSpeed * Input.GetAxis("Vertical");
                 curSpeedY = runSpeed * Input.GetAxis("Horizontal");
-                
+
                 lastTimeRunning += Time.deltaTime;
                 if (lastTimeRunning >= runTimeLimit)
                 {
                     canRun = false;
                 }
-            } 
+            }
             else
             {
                 curSpeedX = walkSpeed * Input.GetAxis("Vertical");
@@ -79,9 +86,24 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        float moveDirectionY = moveDirection.y;
+        moveDirectionY = moveDirection.y;
         moveDirection = (forward * curSpeedX) + (right * curSpeedY);
+    }
 
+    private void HandleRotation()
+    {
+        // Handle rotation:
+        if (canMove)
+        {
+            rotationX += -Input.GetAxis("Mouse Y") * lookSpeed;
+            rotationX = Mathf.Clamp(rotationX, -lookXLimit, lookXLimit);
+            playerCamera.transform.localRotation = Quaternion.Euler(rotationX, 0, 0);
+            transform.rotation *= Quaternion.Euler(0, Input.GetAxis("Mouse X") * lookSpeed, 0);
+        }
+    }
+
+    private void HandleJumping()
+    {
         // Handle jumping:
 
         if (Input.GetButtonDown("Jump") && canMove)
@@ -90,7 +112,7 @@ public class PlayerController : MonoBehaviour
             {
                 moveDirection.y = jumpPower;
                 canDoubleJump = true;
-            } 
+            }
             else if (canDoubleJump)
             {
                 canDoubleJump = false;
@@ -106,16 +128,5 @@ public class PlayerController : MonoBehaviour
         {
             moveDirection.y -= gravity * Time.deltaTime;
         }
-
-        // Handle rotation:
-        if (canMove)
-        {
-            rotationX += -Input.GetAxis("Mouse Y") * lookSpeed;
-            rotationX = Mathf.Clamp(rotationX, -lookXLimit, lookXLimit);
-            playerCamera.transform.localRotation = Quaternion.Euler(rotationX, 0, 0);
-            transform.rotation *= Quaternion.Euler(0, Input.GetAxis("Mouse X") * lookSpeed, 0);
-        }
-
-        characterController.Move(moveDirection * Time.deltaTime);
     }
 }
