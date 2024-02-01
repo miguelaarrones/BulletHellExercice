@@ -1,31 +1,35 @@
+using System;
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
 {
+    public event EventHandler<OnSprintAmountChangedArgs> OnSprintAmountChanged;
+    public class OnSprintAmountChangedArgs : EventArgs
+    {
+        public float sprintAmountNormalized;
+    };
+
     [SerializeField] Camera playerCamera;
     [SerializeField] float walkSpeed = 6f;
     [SerializeField] float runSpeed = 12f;
     [SerializeField] float jumpPower = 7f;
     [SerializeField] float gravity = 10f;
 
-    [SerializeField] private float runTimeLimit = 5f;
-    [SerializeField] private float runCooldownMax = 3f;
+    [SerializeField] private float sprintAmountMax = 5f;
+    private float sprintAmount;
 
     [SerializeField] float lookSpeed = 2f;
     [SerializeField] float lookXLimit = 45f;
 
     private bool canMove = true;
     private bool canRun = true;
-    private bool canDoubleJump = false;
     private bool canJump = true;
+    private bool canDoubleJump = false;
 
     private Vector3 moveDirection = Vector3.zero;
     private float rotationX = 0f;
     private float moveDirectionY;
-
-    private float lastTimeRunning = 0f;
-    private float runCooldown;
 
     private CharacterController characterController;
 
@@ -36,6 +40,8 @@ public class PlayerController : MonoBehaviour
         characterController = GetComponent<CharacterController>();
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        sprintAmount = sprintAmountMax;
     }
 
     // Update is called once per frame
@@ -65,10 +71,17 @@ public class PlayerController : MonoBehaviour
                 curSpeedX = runSpeed * Input.GetAxis("Vertical");
                 curSpeedY = runSpeed * Input.GetAxis("Horizontal");
 
-                lastTimeRunning += Time.deltaTime;
-                if (lastTimeRunning >= runTimeLimit)
+                if (sprintAmount <= 0)
                 {
                     canRun = false;
+                } else
+                {
+                    sprintAmount -= Time.deltaTime;
+                    sprintAmount = Mathf.Clamp(sprintAmount, 0f, sprintAmountMax);
+                    OnSprintAmountChanged?.Invoke(this, new OnSprintAmountChangedArgs
+                    {
+                        sprintAmountNormalized = (float)sprintAmount / sprintAmountMax,
+                    });
                 }
             }
             else
@@ -76,12 +89,18 @@ public class PlayerController : MonoBehaviour
                 curSpeedX = walkSpeed * Input.GetAxis("Vertical");
                 curSpeedY = walkSpeed * Input.GetAxis("Horizontal");
 
-                runCooldown += Time.deltaTime;
-                if (runCooldown >= runCooldownMax)
+                
+                if (sprintAmount == sprintAmountMax)
                 {
-                    lastTimeRunning = 0f;
                     canRun = true;
-                    runCooldown = 0f;
+                } else
+                {
+                    sprintAmount += Time.deltaTime;
+                    sprintAmount = Mathf.Clamp(sprintAmount, 0f, sprintAmountMax);
+                    OnSprintAmountChanged?.Invoke(this, new OnSprintAmountChangedArgs
+                    {
+                        sprintAmountNormalized = (float)sprintAmount / sprintAmountMax,
+                    });
                 }
             }
         }
