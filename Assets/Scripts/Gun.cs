@@ -24,9 +24,12 @@ public class Gun : MonoBehaviour
         if (Physics.Raycast(playerCamera.transform.position, playerCamera.transform.forward, out hit, range))
         {
             // Hit something!
-            if (true) // Check if enemy
+            Enemy enemy;
+            hit.collider.gameObject.TryGetComponent(out enemy);
+            if (enemy != null) // Check if enemy
             {
-                
+                // It's an enemy.
+                enemy.Damage(damage);
             }
         }
     }

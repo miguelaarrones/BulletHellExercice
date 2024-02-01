@@ -7,20 +7,33 @@ using UnityEngine.PlayerLoop;
 
 public class HealthSystem : MonoBehaviour
 {
-    [SerializeField] private float health = 100f;
-    private void TakeDamage(float damage)
+    public event EventHandler OnDamaged;
+    public event EventHandler OnDied;
+
+    [SerializeField] private float healthAmountMax = 100f;
+    private float healthAmount;
+
+    private void Awake()
     {
-        health -= damage;
-        
-        if (health <= 0)
+        healthAmount = healthAmountMax;
+    }
+
+    public void Damage(float damage)
+    {
+        healthAmount -= damage;
+        healthAmount = Mathf.Clamp(healthAmount, 0, healthAmountMax);
+
+        OnDamaged?.Invoke(this, EventArgs.Empty);
+
+        if (IsDead())
         {
-            Die();
+            OnDied?.Invoke(this, EventArgs.Empty);
         }
     }
 
-    private void Die()
-    {
-        // Destroy(gameObject);
-        Debug.Log("Die");
-    }
+    public bool IsDead() => healthAmount == 0;
+
+    public float GetHealthAmount() => healthAmount;
+
+    public float GetHealthAmountNormalized() => (float)healthAmount / healthAmountMax;
 }
